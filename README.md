@@ -1,29 +1,31 @@
-Project Title: SCSK Pricing ETL Pipeline
+**Project Title: SCSK Pricing ETL Pipeline**
+
+**
+Project Scenario**
+
+This project is a small data pipeline that ingests product pricing data from a public API, transforms it, and makes it available for downstream analytics.
 
 
-Project Scenario
-
-This project is a small data pipeline that ingests product pricing data from a public API, transforms it, and makes it available for downstream analytics. This simulates a typical use case in a global trading or commodity business
-
-
-Deliverables
+**Deliverables**
 
 * Python scripts for the ETL process.
 * An Airflow DAG file for orchestration.
-* A SQL schema (DDL) file.
+* A SQL schema (DDL) file. (Yet to add)
 * A brief  README.md with setup instructions, assumptions, and potential improvements.
 
 
 Tech StackPython: For data extraction and transformation.
 SQL: For database schema and data loading.Airflow: For orchestrating the data pipeline.Git: For version control.API: Fake Store API was used for product data and Exchange Rate API for currency conversion.
-Project Requirements
+
+**Project Requirements**
 
 The pipeline is designed to perform the following four key steps:
 1. Ingest: Extract product data from a public API and save the raw data in a data lake format (e.g., Parquet or JSON).
 2. Transform: Clean and normalize the data by converting prices to GBP using a separate API for exchange rates. A new column for the price in GBP is added.
 3. Store: Perform basic feature engineering (e.g., categorizing product types or flagging items over a certain price threshold). The cleaned data is then loaded into a SQL-based database.
 4. Orchestrate: An Airflow DAG is defined to orchestrate the tasks: ingest_data, transform_data, and load_to_db.
-Setup Instructions
+
+**Setup Instructions**
 
 Follow these steps to set up and run the ETL pipeline locally:
 1. Clone the Repository:
@@ -44,14 +46,14 @@ In the second terminal, start the Airflow web server:airflow webserver -p 8080
 * Manually trigger the DAG by clicking the "Trigger DAG" button.
 * Monitor the progress of the ingest_data, transform_data, load_data, and pipeline_summary tasks in the Graph or Gantt views .
 
-Assumptions Made
+**Assumptions Made**
 
 * The pipeline uses the Fake Store API as the data source for product pricing.
 * The Exchange Rate.host API is used to convert prices to GBP.
 * For a local setup, the SequentialExecutor is used, and a SQLite database acts as the metadata store.
 
-
-What Would Be Improved with More Time?
+**
+What Would Be Improved with More Time?**
 
 * Robustness: Implement more comprehensive data quality checks and validation steps within the pipeline to handle missing or corrupt data.
 * Production Readiness:
