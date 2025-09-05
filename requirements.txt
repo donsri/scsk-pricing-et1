@@ -1,0 +1,18 @@
+# Core ETL Dependencies
+requests==2.31.0
+azure-storage-blob==12.26.0
+azure-identity==1.24.0
+azure-core==1.35.0
+pandas==2.1.4
+python-dotenv==1.0.0
+
+# Data Processing
+pyarrow==14.0.2
+
+# Airflow with required provider
+apache-airflow==2.10.0
+apache-airflow-providers-fab==1.0.2
+apache-airflow-providers-http==4.8.0
+
+# Utilities
+python-dateutil==2.8.2
