@@ -21,7 +21,7 @@ dag = DAG(
     'scsk_pricing_etl_pipeline',
     default_args=default_args,
     description='Product Pricing ETL Pipeline',
-    schedule=timedelta(days=1),  # Changed from schedule_interval
+    schedule=timedelta(days=1),
     catchup=False,
     tags=['etl', 'pricing', 'azure']
 )
@@ -29,9 +29,9 @@ dag = DAG(
 def run_ingest(**context):
     print("Starting ingestion...")
     print("Current working directory:", os.getcwd())
-    print("Python path:", sys.path[:3])  # Show first 3 paths
+    print("Python path:", sys.path[:3])
     
-    from etl.ingest import fetch_and_store_raw
+    from etl.ingest import fetch_and_store_raw  # CHANGED
     print("Import successful, calling function...")
     
     result = fetch_and_store_raw()
@@ -39,13 +39,13 @@ def run_ingest(**context):
     return result
 
 def run_transform(**context):
-    from etl.transform import transform_to_parquet
+    from etl.transform import transform_to_parquet  # CHANGED
     print("Starting transformation...")
     result = transform_to_parquet()
     return result
 
 def run_load(**context):
-    from etl.load import load_pipeline
+    from etl.load import load_pipeline  # CHANGED
     print("Starting load...")
     result = load_pipeline()
     return result
