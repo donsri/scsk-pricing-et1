@@ -1,14 +1,15 @@
 import pandas as pd
 import pyodbc
+import os
 from io import BytesIO
 from azure.storage.blob import BlobServiceClient
-from config import (
+from etl.config import (
     AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER,
     AZURE_STORAGE_SAS, AZURE_STORAGE_KEY,
     AZURE_SQL_SERVER, AZURE_SQL_DATABASE, AZURE_SQL_USERNAME, 
     AZURE_SQL_PASSWORD, SQL_SCHEMA, ODBC_DRIVER
 )
-from utils import utc_now_date_str
+from etl.utils import utc_now_date_str
 
 def _blob_service():
     """Create blob service client"""
@@ -20,7 +21,7 @@ def _blob_service():
         return BlobServiceClient(account_url=acc_url, credential=AZURE_STORAGE_KEY)
 
 def get_sql_connection():
-    """Create SQL Server connection"""
+    """Create SQL Server connection with Docker-friendly settings"""
     conn_str = (
         f"DRIVER={{{ODBC_DRIVER}}};"
         f"SERVER={AZURE_SQL_SERVER};"
@@ -28,37 +29,77 @@ def get_sql_connection():
         f"UID={AZURE_SQL_USERNAME};"
         f"PWD={AZURE_SQL_PASSWORD};"
         "Encrypt=yes;"
-        "TrustServerCertificate=no;"
+        "TrustServerCertificate=yes;"  # Changed from 'no' to 'yes' for Docker
+        "Connection Timeout=60;"        # Added longer timeout
+        "Command Timeout=60;"           # Added command timeout
     )
+    print(f"Connecting to: {AZURE_SQL_SERVER}")  # Debug info
     return pyodbc.connect(conn_str)
 
-def create_products_table():
-    """Create products table if it doesn't exist"""
-    create_sql = f"""
-    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='products' AND xtype='U')
-    CREATE TABLE {SQL_SCHEMA}.products (
-        product_id INT PRIMARY KEY,
-        title NVARCHAR(255),
-        price_usd DECIMAL(10,2),
-        price_gbp DECIMAL(10,2),
-        description NVARCHAR(MAX),
-        category_name NVARCHAR(100),
-        rating DECIMAL(3,2),
-        rating_count INT,
-        expensive BIT,
-        price_band NVARCHAR(20),
-        processing_date DATE,
-        exchange_rate_used DECIMAL(10,6),
-        ingested_at DATETIME2,
-        created_at DATETIME2 DEFAULT GETDATE()
-    )
-    """
+def read_sql_file(filename):
+    """Read SQL file from sql directory"""
+    sql_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sql')
+    file_path = os.path.join(sql_dir, filename)
     
-    with get_sql_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(create_sql)
-        conn.commit()
-        print("Products table created/verified")
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"SQL file not found: {file_path}")
+    
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return file.read()
+
+def execute_sql_script(sql_script, connection):
+    """Execute SQL script with proper batch handling"""
+    # Split script by GO statements and execute each batch
+    batches = [batch.strip() for batch in sql_script.split('GO') if batch.strip()]
+    
+    if not batches:
+        # If no GO statements, treat entire script as one batch
+        batches = [sql_script]
+    
+    cursor = connection.cursor()
+    
+    for i, batch in enumerate(batches):
+        if batch.strip():
+            try:
+                print(f"Executing SQL batch {i+1}/{len(batches)}")
+                cursor.execute(batch)
+                connection.commit()
+            except Exception as e:
+                print(f"Error in batch {i+1}: {e}")
+                print(f"Batch content: {batch[:200]}...")
+                raise
+    
+    cursor.close()
+
+def create_products_table():
+    """Create products table using SQL schema file"""
+    print("Creating products table from SQL schema...")
+    
+    try:
+        # Read the SQL schema file
+        create_table_sql = read_sql_file('schema.sql')
+        
+        with get_sql_connection() as conn:
+            execute_sql_script(create_table_sql, conn)
+            print("Products table created/verified successfully")
+            
+    except Exception as e:
+        print(f"Error creating table: {e}")
+        raise
+
+def test_sql_connection():
+    """Test SQL Server connection"""
+    try:
+        print("Testing SQL Server connection...")
+        with get_sql_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT @@VERSION")
+            version = cursor.fetchone()[0]
+            print(f"Connection successful! SQL Server: {version[:50]}...")
+            return True
+    except Exception as e:
+        print(f"Connection test failed: {e}")
+        return False
 
 def find_latest_parquet():
     """Find latest processed parquet file for today"""
@@ -147,11 +188,15 @@ def load_pipeline(parquet_path=None):
     print("Starting load process...")
     
     try:
+        # Test connection first
+        if not test_sql_connection():
+            raise Exception("Cannot connect to SQL Server")
+        
         # Find latest file if not specified
         if not parquet_path:
             parquet_path = find_latest_parquet()
         
-        # Create table
+        # Create table using SQL schema files
         create_products_table()
         
         # Load data

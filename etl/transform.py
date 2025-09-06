@@ -2,11 +2,11 @@ import json
 import pandas as pd
 from io import BytesIO
 from azure.storage.blob import BlobServiceClient
-from config import (
+from etl.config import (
     AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER,
     AZURE_STORAGE_SAS, AZURE_STORAGE_KEY, PRICE_EXPENSIVE_THRESHOLD_GBP
 )
-from utils import utc_now_date_str, utc_now_ts_str
+from etl.utils import utc_now_date_str, utc_now_ts_str
 
 def _blob_service():
     """Create blob service client"""

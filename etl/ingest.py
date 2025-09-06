@@ -2,11 +2,11 @@ import json
 import requests
 from io import BytesIO
 from azure.storage.blob import BlobServiceClient, ContentSettings
-from config import (
+from etl.config import (
     AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER,
     AZURE_STORAGE_SAS, AZURE_STORAGE_KEY
 )
-from utils import utc_now_date_str, utc_now_ts_str
+from etl.utils import utc_now_date_str, utc_now_ts_str
 
 FAKESTORE_URL = "https://fakestoreapi.com/products"
 # Using a different free API that doesn't require authentication
