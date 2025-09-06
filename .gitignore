@@ -10,6 +10,7 @@ airflow-webserver.pid
 # Python virtual environment
 .venv/
 venv/
+airflow_env/
 __pycache__/
 
 # macOS-specific files
